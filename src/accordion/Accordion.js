@@ -1,70 +1,51 @@
-import React, { Component } from 'react';
+import React from 'react';
 import { FaChevronRight, FaChevronDown } from 'react-icons/fa';
 import './Accordion.scss';
 
-const data = [
-    {
-        id: 1,
-        title: "accordion Title #",
-        content: `Include popular icons in your React projects easly with react-icons,which utilizes ES6 imports
-                that allows you to include only the icons that your project is using.`
-    },
-    {
-        id: 2,
-        title: "accordion Title #",
-        content: `Include popular icons in your React projects easly with react-icons,which utilizes ES6 imports
-                that allows you to include only the icons that your project is using.`
-    },
-    {
-        id: 3,
-        title: "accordion Title #",
-        content: `Include popular icons in your React projects easly with react-icons,which utilizes ES6 imports
-                that allows you to include only the icons that your project is using.`
-    },
-];
+const AccordionContext = React.createContext();
 
-class Accordion extends Component {
-    state = {
-        ids: [0],
-        disabled: [1]
+const AccordionProvider = ({children, isSingleView}) => {
+    const [selectedIDs, setSelectedIDs] = React.useState([]);
+    const [disabled, setDisabled] = React.useState([]);
+
+    const toggleItem = (index) => {
+        isSingleView && !disabled.includes(index)
+            ? setSelectedIDs([index])
+            :
+            selectedIDs.includes(index) 
+            ? setSelectedIDs(selectedIDs.filter(i => i !== index))
+            : setSelectedIDs([...selectedIDs, index]);
     }
 
-    toggleItem = (index) => {
-        const { ids } = this.state;
-        ids.includes(index) 
-        ? this.setState({ ids: ids.filter(i => i !== index) })
-        : this.setState({ ids: [...ids, index] });
-    }
-
-    render() {
-        const { ids, disabled } = this.state;
-        return (
-            <div className="container" style={{ marginTop: 30 }}>
-                {
-                    data.map((item, i) => (
-                        <AccordionItem
-                            key={i}
-                            index={i}
-                            item={item}
-                            isOpen={ids.includes(i) && !disabled.includes(i)}
-                            isDisabled={disabled.includes(i)}
-                            onToggleItem={index => this.toggleItem(index)}
-                        />
-                    ))
-                }
-            </div>
-        );
-    }
+    return (
+        <AccordionContext.Provider value={{selectedIDs, disabled, toggleItem, setDisabled}} >
+            {children}
+        </AccordionContext.Provider>
+    )
 }
+
+const Accordion = ({children}) => ( 
+    <AccordionProvider>
+        {children}
+    </AccordionProvider>
+)
 
 export default Accordion;
 
-const AccordionItem = ({ index, item: { title, content }, onToggleItem, isOpen, isDisabled }) => {
+export const AccordionItem = ( {index, title, isOpen, isDisabled, children} ) => {
+    const { selectedIDs, toggleItem } = React.useContext(AccordionContext);
+    
     let classnames = `accordion bg-white shadow ${isDisabled ? "disabled" : ''}`;
     return (
         <div className={classnames}>
             <div className="accordion__header">
-                <div className="accordion__icon" onClick={() => onToggleItem(index)}>
+                <div className="accordion__icon" 
+                    onClick={(e) => 
+                        isDisabled 
+                        ? e.stopPropagation()
+                        : toggleItem(index)
+                    }
+                >
                     {
                         isOpen
                             ? <FaChevronDown />
@@ -75,9 +56,9 @@ const AccordionItem = ({ index, item: { title, content }, onToggleItem, isOpen, 
                     <h3> {title}{index} </h3>
                 </div>
             </div>
-            <div className="accordion__body" style={{ display: isOpen ? "block" : '' }}>
+            <div className="accordion__body" style={{ display: selectedIDs.includes(index) ? "block" : '' }}>
                 <div className="accordion_content">
-                    <p> {content} </p>
+                    {children}
                 </div>
             </div>
         </div>
